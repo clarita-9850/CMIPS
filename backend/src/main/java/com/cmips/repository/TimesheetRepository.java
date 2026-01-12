@@ -187,4 +187,20 @@ public interface TimesheetRepository extends JpaRepository<Timesheet, Long> {
     // Status as String for compatibility with IHSS pipeline
     @Query(value = "SELECT * FROM timesheets WHERE status = :status ORDER BY created_at DESC", nativeQuery = true)
     List<Timesheet> findByStatusOrderByCreatedAtDesc(@Param("status") String status);
+
+    // Batch job query methods
+    List<Timesheet> findByPayPeriodStartBetween(LocalDate startDate, LocalDate endDate);
+
+    List<Timesheet> findByStatusAndPayPeriodStartBetween(TimesheetStatus status, LocalDate startDate, LocalDate endDate);
+
+    List<Timesheet> findByDepartmentAndPayPeriodStartBetween(String department, LocalDate startDate, LocalDate endDate);
+
+    List<Timesheet> findByDepartmentAndStatusAndPayPeriodStartBetween(String department, TimesheetStatus status, LocalDate startDate, LocalDate endDate);
+
+    // Batch job query methods with String status (for compatibility)
+    @Query("SELECT t FROM Timesheet t WHERE t.status = :status AND t.payPeriodStart BETWEEN :startDate AND :endDate")
+    List<Timesheet> findByStatusStringAndPayPeriodStartBetween(@Param("status") String status, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT t FROM Timesheet t WHERE t.department = :department AND t.status = :status AND t.payPeriodStart BETWEEN :startDate AND :endDate")
+    List<Timesheet> findByDepartmentAndStatusStringAndPayPeriodStartBetween(@Param("department") String department, @Param("status") String status, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

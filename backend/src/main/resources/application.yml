@@ -28,6 +28,20 @@ spring:
           # This allows tokens issued by either localhost:8080 or keycloak:8080
           jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://keycloak:8080/realms/cmips/protocol/openid-connect/certs}
 
+  # Spring Batch Configuration
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false  # Prevent auto-start of jobs on startup
+
+  # Redis Configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
   # Kafka Configuration (Spring Boot auto-config)
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
@@ -145,6 +159,38 @@ batch:
   processing:
     chunk-size: ${REPORT_CHUNK_SIZE:1000}
     output-dir: ${REPORT_OUTPUT_DIR:/app/reports}
+
+# BAW Integration Hub Configuration
+baw:
+  integration:
+    enabled: ${BAW_INTEGRATION_ENABLED:true}
+    retry-attempts: ${BAW_RETRY_ATTEMPTS:3}
+    circuit-breaker:
+      enabled: true
+
+# Scheduler App Event Channels (Redis Pub/Sub)
+# These channel names must match the channels the Scheduler subscribes to
+scheduler-app:
+  url: ${SCHEDULER_APP_URL:http://localhost:8084}
+  events:
+    job-started: ${SCHEDULER_CHANNEL_JOB_STARTED:batch:events:job-started}
+    job-progress: ${SCHEDULER_CHANNEL_JOB_PROGRESS:batch:events:job-progress}
+    job-completed: ${SCHEDULER_CHANNEL_JOB_COMPLETED:batch:events:job-completed}
+    job-failed: ${SCHEDULER_CHANNEL_JOB_FAILED:batch:events:job-failed}
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      baw-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+      scheduler-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
 
 # Management endpoints
 management:

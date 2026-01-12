@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Repository
 public interface RecipientRepository extends JpaRepository<RecipientEntity, Long> {
@@ -22,8 +24,17 @@ public interface RecipientRepository extends JpaRepository<RecipientEntity, Long
     // Find by person type
     List<RecipientEntity> findByPersonType(PersonType personType);
 
+    // Find by person type with pagination
+    Page<RecipientEntity> findByPersonType(PersonType personType, Pageable pageable);
+
     // Find by county
     List<RecipientEntity> findByCountyCode(String countyCode);
+
+    // Find by residence county with pagination
+    Page<RecipientEntity> findByResidenceCounty(String residenceCounty, Pageable pageable);
+
+    // Find by county and person type with pagination
+    Page<RecipientEntity> findByResidenceCountyAndPersonType(String residenceCounty, PersonType personType, Pageable pageable);
 
     // Search by last name (with Soundex support would need custom implementation)
     List<RecipientEntity> findByLastNameContainingIgnoreCase(String lastName);
@@ -44,20 +55,20 @@ public interface RecipientRepository extends JpaRepository<RecipientEntity, Long
             @Param("city") String city);
 
     // Comprehensive search (per BR OS 05)
-    @Query("SELECT r FROM RecipientEntity r WHERE " +
+    @Query(value = "SELECT * FROM recipients r WHERE " +
            "(:ssn IS NULL OR r.ssn = :ssn) AND " +
            "(:cin IS NULL OR r.cin = :cin) AND " +
-           "(:lastName IS NULL OR UPPER(r.lastName) LIKE UPPER(CONCAT('%', :lastName, '%'))) AND " +
-           "(:firstName IS NULL OR UPPER(r.firstName) LIKE UPPER(CONCAT('%', :firstName, '%'))) AND " +
-           "(:countyCode IS NULL OR r.countyCode = :countyCode) AND " +
-           "(:personType IS NULL OR r.personType = :personType)")
+           "(:lastName IS NULL OR UPPER(CAST(r.last_name AS VARCHAR)) LIKE UPPER('%' || :lastName || '%')) AND " +
+           "(:firstName IS NULL OR UPPER(CAST(r.first_name AS VARCHAR)) LIKE UPPER('%' || :firstName || '%')) AND " +
+           "(:countyCode IS NULL OR r.county_code = :countyCode) AND " +
+           "(:personType IS NULL OR r.person_type = :personType)", nativeQuery = true)
     List<RecipientEntity> searchRecipients(
             @Param("ssn") String ssn,
             @Param("cin") String cin,
             @Param("lastName") String lastName,
             @Param("firstName") String firstName,
             @Param("countyCode") String countyCode,
-            @Param("personType") PersonType personType);
+            @Param("personType") String personType);
 
     // Find open referrals by county
     List<RecipientEntity> findByCountyCodeAndPersonType(String countyCode, PersonType personType);

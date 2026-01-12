@@ -59,8 +59,7 @@ public class RecipientController {
                     .orElse(List.of());
         } else {
             // BR OS 05: Name/county search
-            PersonType type = personType != null ? PersonType.valueOf(personType) : null;
-            recipients = recipientRepository.searchRecipients(null, null, lastName, firstName, countyCode, type);
+            recipients = recipientRepository.searchRecipients(null, null, lastName, firstName, countyCode, personType);
         }
 
         return ResponseEntity.ok(recipients);
@@ -76,22 +75,34 @@ public class RecipientController {
 
     @GetMapping
     @RequirePermission(resource = "Recipient Resource", scope = "view")
-    public ResponseEntity<List<RecipientEntity>> getAllRecipients(
+    public ResponseEntity<java.util.Map<String, Object>> getAllRecipients(
             @RequestParam(required = false) String personType,
-            @RequestParam(required = false) String countyCode) {
+            @RequestParam(required = false) String countyCode,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
 
-        List<RecipientEntity> recipients;
-        if (personType != null && countyCode != null) {
-            recipients = recipientRepository.findByCountyCodeAndPersonType(countyCode, PersonType.valueOf(personType));
-        } else if (personType != null) {
-            recipients = recipientRepository.findByPersonType(PersonType.valueOf(personType));
-        } else if (countyCode != null) {
-            recipients = recipientRepository.findByCountyCode(countyCode);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<RecipientEntity> recipientPage;
+
+        if (personType != null && !personType.isEmpty() && countyCode != null && !countyCode.isEmpty()) {
+            recipientPage = recipientRepository.findByResidenceCountyAndPersonType(countyCode, PersonType.valueOf(personType), pageable);
+        } else if (personType != null && !personType.isEmpty()) {
+            recipientPage = recipientRepository.findByPersonType(PersonType.valueOf(personType), pageable);
+        } else if (countyCode != null && !countyCode.isEmpty()) {
+            recipientPage = recipientRepository.findByResidenceCounty(countyCode, pageable);
         } else {
-            recipients = recipientRepository.findAll();
+            recipientPage = recipientRepository.findAll(pageable);
         }
 
-        return ResponseEntity.ok(recipients);
+        // Return paginated response with metadata
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("content", recipientPage.getContent());
+        response.put("totalElements", recipientPage.getTotalElements());
+        response.put("totalPages", recipientPage.getTotalPages());
+        response.put("currentPage", recipientPage.getNumber());
+        response.put("pageSize", recipientPage.getSize());
+
+        return ResponseEntity.ok(response);
     }
 
     // ==================== REFERRAL MANAGEMENT (BR OS 11-19, 42) ====================

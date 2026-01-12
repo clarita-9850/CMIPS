@@ -50,26 +50,33 @@ public class ProviderManagementController {
 
     @GetMapping
     @RequirePermission(resource = "Provider Resource", scope = "view")
-    public ResponseEntity<List<Map<String, Object>>> getAllProviders(
+    public ResponseEntity<java.util.Map<String, Object>> getAllProviders(
             @RequestHeader(value = "X-User-Roles", required = false) String roles,
             @RequestParam(required = false) String countyCode,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
 
-        List<ProviderEntity> providers;
-        if (countyCode != null) {
-            providers = providerRepository.findByDojCountyCode(countyCode);
-        } else if (status != null) {
-            providers = providerRepository.findByProviderStatus(ProviderStatus.valueOf(status));
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<ProviderEntity> providerPage;
+
+        if (countyCode != null && !countyCode.isEmpty()) {
+            providerPage = providerRepository.findByDojCountyCode(countyCode, pageable);
+        } else if (status != null && !status.isEmpty()) {
+            providerPage = providerRepository.findByProviderStatus(ProviderStatus.valueOf(status), pageable);
         } else {
-            providers = providerRepository.findAll();
+            providerPage = providerRepository.findAll(pageable);
         }
 
-        // Apply field-level authorization
-        List<Map<String, Object>> filteredProviders = providers.stream()
-                .map(p -> fieldAuthService.filterFieldsForRole(p, roles, "Provider Resource"))
-                .toList();
+        // Return paginated response with metadata
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("content", providerPage.getContent());
+        response.put("totalElements", providerPage.getTotalElements());
+        response.put("totalPages", providerPage.getTotalPages());
+        response.put("currentPage", providerPage.getNumber());
+        response.put("pageSize", providerPage.getSize());
 
-        return ResponseEntity.ok(filteredProviders);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")

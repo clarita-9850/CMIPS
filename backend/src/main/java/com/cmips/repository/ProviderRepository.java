@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Repository
 public interface ProviderRepository extends JpaRepository<ProviderEntity, Long> {
@@ -23,8 +25,14 @@ public interface ProviderRepository extends JpaRepository<ProviderEntity, Long> 
     // Find by DOJ County
     List<ProviderEntity> findByDojCountyCode(String dojCountyCode);
 
+    // Find by DOJ County with pagination
+    Page<ProviderEntity> findByDojCountyCode(String dojCountyCode, Pageable pageable);
+
     // Find by status
     List<ProviderEntity> findByProviderStatus(ProviderStatus providerStatus);
+
+    // Find by status with pagination
+    Page<ProviderEntity> findByProviderStatus(ProviderStatus providerStatus, Pageable pageable);
 
     // Find by eligibility
     List<ProviderEntity> findByEligible(String eligible);

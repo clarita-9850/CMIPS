@@ -65,8 +65,9 @@ public class FieldLevelAuthorizationService {
             Set<String> allowedFields = getAllowedFields(resourceName, scope);
             
             if (allowedFields.isEmpty()) {
-                logger.warn("No allowed fields found for resource: {} with scope: {} - returning empty data", resourceName, scope);
-                return new HashMap<>();
+                logger.warn("No allowed fields found for resource: {} with scope: {} - returning ALL fields (no field-level security configured)", resourceName, scope);
+                // Return all data when no field-level security is configured
+                return new HashMap<>(data);
             }
             
             // Filter the data to include only allowed fields
@@ -113,8 +114,11 @@ public class FieldLevelAuthorizationService {
             Set<String> allowedFields = getAllowedFields(resourceName, scope);
             
             if (allowedFields.isEmpty()) {
-                logger.warn("No allowed fields found for resource: {} with scope: {} - returning empty list", resourceName, scope);
-                return new ArrayList<>();
+                logger.warn("No allowed fields found for resource: {} with scope: {} - returning ALL items (no field-level security configured)", resourceName, scope);
+                // Return all data when no field-level security is configured - convert to list of maps
+                return dataList.stream()
+                    .map(item -> new HashMap<>(item))
+                    .collect(Collectors.toList());
             }
             
             // Filter each item in the list

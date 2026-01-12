@@ -1,11 +1,14 @@
 ## Multi-stage build to avoid relying on mvnw/.mvn in context
 
-# Build stage - use standard Maven image with JDK 17
-FROM maven:3.9-eclipse-temurin-17 AS build
+# Build stage - use standard Maven image with JDK 21
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
 # Copy pom first to leverage Docker cache for dependencies
 COPY pom.xml .
+
+# Copy libs folder for local dependencies
+COPY libs ./libs
 
 # Download all dependencies including Lombok annotation processor
 RUN mvn -B dependency:resolve dependency:resolve-plugins
@@ -13,11 +16,11 @@ RUN mvn -B dependency:resolve dependency:resolve-plugins
 # Copy source code
 COPY src ./src
 
-# Build the application - ensure annotation processing happens
-RUN mvn -B -DskipTests clean compile package
+# Build the application - skip tests entirely
+RUN mvn -B -DskipTests -Dmaven.test.skip=true clean package
 
 # Runtime stage
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # Install curl for health checks

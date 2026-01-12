@@ -1,6 +1,5 @@
 package com.cmips.service;
 
-import com.cmips.model.JobStatus;
 import com.cmips.model.ReportResult;
 import com.cmips.model.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,14 +16,10 @@ import java.util.*;
 
 @Service
 public class CSVReportGeneratorService {
-    
-    @Autowired
-    private JobQueueService jobQueueService;
-    
-    
+
     @Autowired
     private FieldMaskingService fieldMaskingService;
-    
+
     @Autowired
     private FieldVisibilityService fieldVisibilityService;
     
@@ -64,7 +59,7 @@ public class CSVReportGeneratorService {
     }
     
     /**
-     * Generate daily CSV report for a specific job
+     * Generate daily CSV report for a specific job (Spring Batch version)
      */
     public String generateDailyCSVReport(String jobId, String userRole, String reportType, String dateStr) {
         System.out.println("📊 CSVReportGeneratorService: Generating daily CSV report");
@@ -72,31 +67,25 @@ public class CSVReportGeneratorService {
         System.out.println("👤 User Role: " + userRole);
         System.out.println("📊 Report Type: " + reportType);
         System.out.println("📅 Date: " + dateStr);
-        
+
         try {
-            // Get job result data
-            ReportResult jobResult = jobQueueService.getJobResult(jobId);
-            if (jobResult == null) {
-                throw new RuntimeException("Job result not found for job: " + jobId);
-            }
-            
             // Get visible fields for the user role - using default fields when no JWT token available
             List<String> visibleFields = fieldVisibilityService.getDefaultVisibleFields();
             System.out.println("👁️ Visible fields for " + userRole + ": " + visibleFields);
-            
+
             // Generate CSV file path
             String csvFilePath = generateCSVFilePath(userRole, reportType, dateStr);
             System.out.println("📄 CSV file path: " + csvFilePath);
-            
-            // Create CSV content
-            String csvContent = generateCSVContent(jobResult, visibleFields, userRole, reportType, dateStr);
-            
+
+            // Create CSV content with role-based filtering
+            String csvContent = generateCSVContentWithRoleFiltering(visibleFields, userRole, reportType, dateStr);
+
             // Write CSV file
             writeCSVFile(csvFilePath, csvContent);
             System.out.println("✅ CSV report generated successfully: " + csvFilePath);
-            
+
             return csvFilePath;
-            
+
         } catch (Exception e) {
             System.err.println("❌ Error generating CSV report: " + e.getMessage());
             e.printStackTrace();
